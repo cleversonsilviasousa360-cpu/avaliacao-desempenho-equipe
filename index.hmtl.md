@@ -164,7 +164,9 @@
             </div>
         </div>
         
-        <footer class="mt-6 text-xs text-gray-400 text-center">
+        <!-- FOOTER ATUALIZADO COM INFO DE LICENÇA/DIREITOS AUTORAIS -->
+        <footer class="mt-6 text-xs text-gray-400 text-center space-y-1">
+            <p>&copy; 2025 [Seu Nome/Organização]. Uso Compartilhado.</p>
             <p id="user-info">Aguardando inicialização...</p>
         </footer>
     </div>
@@ -233,6 +235,9 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
+                // Mostra o status de carregamento
+                userInfoEl.textContent = `App ID: ${appId} | Conectando...`;
+                
                 // Espera o estado de autenticação mudar
                 await new Promise((resolve) => {
                     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -246,13 +251,13 @@
                             }
                         }
                         userId = auth.currentUser?.uid || crypto.randomUUID();
-                        userInfoEl.textContent = `App ID: ${appId}`; // Removido User ID para o app público
+                        userInfoEl.textContent = `App ID: ${appId} | Status: Conectado`; // Status de sucesso
                         unsubscribe(); 
                         resolve();
                     });
                 });
                 
-                // Inicia a escuta em tempo real dos dados (mesmo que a tela de consulta esteja oculta)
+                // Inicia a escuta em tempo real dos dados
                 fetchEvaluations(true); 
 
             } catch (error) {
