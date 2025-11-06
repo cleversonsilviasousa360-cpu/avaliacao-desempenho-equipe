@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Avaliação de Desempenho de Equipe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            /* NOVO: Gradiente de fundo sem roxo - azul mais suave */
+            background: linear-gradient(to right bottom, #4f46e5, #60a5fa); /* Indigo para Azul Céu */
+            color: #374151; 
+        }
+        .classification-indicator {
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            transition: background-color 0.3s, color 0.3s, transform 0.2s;
+        }
+        .classification-indicator:hover {
+            transform: translateY(-2px);
+        }
+        .history-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            transition: box-shadow 0.2s, transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .history-card:hover {
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15), 0 5px 8px -3px rgba(0, 0, 0, 0.08); /* Sombra mais destacada */
+            transform: translateY(-5px); /* Efeito de elevação mais pronunciado */
+        }
+        /* Efeito de cor na borda superior do card do histórico */
+        .history-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px; /* Altura da 'borda' colorida ligeiramente maior */
+            background: linear-gradient(to right, var(--tw-gradient-from), var(--tw-gradient-to));
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+
+        /* Classes para a borda colorida baseada na classificação */
+        .history-card.excelente::before { --tw-gradient-from: #10b981; --tw-gradient-to: #34d399; }
+        .history-card.bom::before { --tw-gradient-from: #f97316; --tw-gradient-to: #fb923c; }
+        .history-card.regular::before { --tw-gradient-from: #f59e0b; --tw-gradient-to: #facc15; }
+        .history-card.insatisfatorio::before { --tw-gradient-from: #ef4444; --tw-gradient-to: #f87171; }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5', /* Indigo (mantido, mas sem o purple como secondary) */
+                        'accent-blue': '#60a5fa', /* Novo azul de acento para gradiente de fundo */
+                        'dark-text': '#374151',
+                        'light-bg': '#f3f4f6',
+                        'excelente': '#10b981', /* Green */
+                        'bom': '#f97316', /* Orange */
+                        'regular': '#f59e0b', /* Yellow */
+                        'insatisfatorio': '#ef4444', /* Red */
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-3xl bg-white shadow-2xl rounded-3xl p-6 sm:p-8 border border-gray-100 backdrop-blur-sm bg-opacity-90">
+
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-dark-text mb-2 drop-shadow-sm">Sistema de Avaliação</h1>
+            <p class="text-primary text-lg font-medium">Desempenho da Equipe</p>
+        </header>
+
+        <nav class="flex space-x-3 mb-8 p-1 rounded-xl bg-gray-100 shadow-inner">
+            <button id="btn-evaluation" onclick="toggleView('evaluation')" 
+                    class="flex-1 py-3 px-4 text-base font-semibold rounded-xl bg-primary text-white shadow-lg 
+                           hover:bg-indigo-700 transition duration-300 transform hover:scale-105">
+                Nova Avaliação
+            </button>
+            <button id="btn-consultation" onclick="toggleView('consultation')" 
+                    class="flex-1 py-3 px-4 text-base font-semibold rounded-xl bg-transparent text-gray-700 
+                           hover:bg-white hover:text-primary shadow-sm hover:shadow-md transition duration-300 transform hover:scale-105">
+                Consultar Histórico
+            </button>
+        </nav>
+
+        <div id="evaluation-view">
+            <p class="text-gray-600 mt-2 mb-8 text-center text-lg">Preencha os campos para avaliar o desempenho.</p>
+
+            <div class="space-y-5 mb-8 p-6 bg-light-bg rounded-2xl border border-gray-200 shadow-inner">
+                <h2 class="text-2xl font-bold text-dark-text border-b pb-3 mb-4 border-gray-200">Dados do Registro</h2>
+                <div>
+                    <label for="colaborador" class="block text-sm font-medium text-gray-700 mb-2">Nome do Colaborador</label>
+                    <input type="text" id="colaborador" class="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-primary focus:border-primary shadow-sm text-dark-text" placeholder="Ex: João da Silva" />
+                </div>
+                <div>
+                    <label for="avaliador" class="block text-sm font-medium text-gray-700 mb-2">Nome do Avaliador</label>
+                    <input type="text" id="avaliador" class="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-primary focus:border-primary shadow-sm text-dark-text" placeholder="Ex: Maria Souza (Gerente)" />
+                </div>
+            </div>
+
+            <div id="input-section" class="space-y-6 mb-8">
+                <div class="p-5 bg-indigo-50 rounded-2xl shadow-md border border-indigo-200">
+                    <label for="desempenho" class="block text-lg font-medium text-indigo-800 mb-2">
+                        1. Desempenho <span class="text-sm text-indigo-600 font-normal">(Peso 50%)</span>
+                    </label>
+                    <select id="desempenho" class="w-full p-3.5 border border-indigo-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 bg-white text-dark-text shadow-sm">
+                        <option value="5">5 - Excelente</option>
+                        <option value="4">4 - Acima da Média</option>
+                        <option value="3" selected>3 - Regular</option>
+                        <option value="2">2 - Abaixo da Média</option>
+                        <option value="1">1 - Insatisfatório</option>
+                    </select>
+                </div>
+
+                <div class="p-5 bg-green-50 rounded-2xl shadow-md border border-green-200">
+                    <label for="assiduidade" class="block text-lg font-medium text-green-800 mb-2">
+                        2. Assiduidade <span class="text-sm text-green-600 font-normal">(Peso 30%)</span>
+                    </label>
+                    <select id="assiduidade" class="w-full p-3.5 border border-green-300 rounded-xl focus:ring-green-500 focus:border-green-500 bg-white text-dark-text shadow-sm">
+                        <option value="5" selected>5 - Sempre pontual</option>
+                        <option value="4">4 - Raros atrasos</option>
+                        <option value="3">3 - Regular</option>
+                        <option value="2">2 - Muitos atrasos</option>
+                        <option value="1">1 - Problemas de pontualidade</option>
+                    </select>
+                </div>
+
+                <div class="p-5 bg-red-50 rounded-2xl shadow-md border border-red-200">
+                    <label for="tempo" class="block text-lg font-medium text-red-800 mb-2">
+                        3. Tempo de Empresa <span class="text-sm text-red-600 font-normal">(Peso 20%)</span>
+                    </label>
+                    <select id="tempo" class="w-full p-3.5 border border-red-300 rounded-xl focus:ring-red-500 focus:border-red-500 bg-white text-dark-text shadow-sm">
+                        <option value="5" selected>5 - Acima de 24 meses</option>
+                        <option value="4">4 - 18 a 24 meses</option>
+                        <option value="3">3 - 12 a 18 meses</option>
+                        <option value="2">2 - 7 a 11 meses</option>
+                        <option value="1">1 - Até 6 meses</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-100 p-7 rounded-2xl border border-blue-200 shadow-xl">
+                <h2 class="text-2xl font-bold text-dark-text mb-4 border-b pb-3 border-blue-300">Resultado da Avaliação</h2>
+
+                <div id="calculo-detalhado" class="mb-6 bg-white border border-gray-200 rounded-xl p-4 overflow-x-auto shadow-sm"></div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-5 p-3 bg-white rounded-xl shadow-inner border border-gray-100">
+                    <p class="text-2xl font-semibold text-gray-700">Nota Final:</p>
+                    <span id="nota-final" class="text-5xl font-extrabold text-primary bg-indigo-100 px-5 py-2 rounded-xl shadow-inner">4.1</span>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 p-3 bg-white rounded-xl shadow-inner border border-gray-100">
+                    <p class="text-2xl font-semibold text-gray-700">Classificação:</p>
+                    <span id="classificacao" class="classification-indicator bg-bom text-white">BOM</span>
+                </div>
+
+                <div>
+                    <p class="text-lg font-semibold text-gray-700 mt-4 mb-3">Ação Sugerida:</p>
+                    <p id="acao-sugerida" class="text-gray-700 p-4 bg-white border border-gray-200 rounded-xl italic shadow-sm">
+                        Buscar pontos de melhoria e acompanhar o desenvolvimento.
+                    </p>
+                </div>
+
+                <button id="salvar-btn" onclick="salvarAvaliacao()" class="mt-8 w-full py-4 bg-gradient-to-r from-primary to-accent-blue text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition duration-300 flex items-center justify-center text-lg">
+                    <span id="btn-text">Salvar Avaliação</span>
+                    <svg id="spinner" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+                <p id="status-message" class="mt-4 text-center text-base font-medium h-5"></p>
+            </div>
+        </div>
+
+        <div id="consultation-view" class="hidden">
+            <h2 class="text-3xl font-bold text-dark-text mb-6">Histórico de Avaliações</h2>
+            <p id="list-status" class="text-gray-600 mb-6 text-center text-lg">Carregando dados...</p>
+            <div id="avaliacoes-list" class="space-y-4"></div>
+        </div>
+
+        <footer class="mt-8 text-sm text-gray-500 text-center space-y-1">
+            <p>&copy; 2025 Cleverson Silva. Uso Compartilhado.</p>
+            <p id="user-info" class="text-gray-600 font-medium">Conectando ao Firebase...</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            onSnapshot, 
+            deleteDoc, 
+            doc      
+        } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAHvwmVyXrJSQwPCSZYN2J1Js8bgXMo20E",
+            authDomain: "avaliacao-equipe.firebaseapp.com",
+            projectId: "avaliacao-equipe",
+            storageBucket: "avaliacao-equipe.appspot.com",
+            messagingSenderId: "78731038805",
+            appId: "1:78731038805:web:48a49d75490023a5f344dc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId = null;
+
+        const PESOS = { desempenho: 0.5, assiduidade: 0.3, tempo: 0.2 };
+        const CLASSIFICACOES = [
+            { min: 4.5, max: 5, label: 'EXCELENTE', colorClass: 'bg-excelente text-white', colorKey: 'excelente', action: 'Manter reconhecimento.' },
+            { min: 3.5, max: 4.4, label: 'BOM', colorClass: 'bg-bom text-white', colorKey: 'bom', action: 'Buscar pontos de melhoria.' },
+            { min: 2.5, max: 3.4, label: 'REGULAR', colorClass: 'bg-regular text-gray-800', colorKey: 'regular', action: 'Criar PDI e acompanhar.' },
+            { min: 0, max: 2.4, label: 'INSATISFATÓRIO', colorClass: 'bg-insatisfatorio text-white', colorKey: 'insatisfatorio', action: 'Revisar desempenho.' }
+        ];
+
+        const el = id => document.getElementById(id);
+        const colaboradorEl = el('colaborador'), avaliadorEl = el('avaliador'),
+            desempenhoEl = el('desempenho'), assiduidadeEl = el('assiduidade'),
+            tempoEl = el('tempo'), notaFinalEl = el('nota-final'),
+            classificacaoEl = el('classificacao'), acaoSugeridaEl = el('acao-sugerida'),
+            salvarBtn = el('salvar-btn'), btnText = el('btn-text'),
+            spinner = el('spinner'), statusMessageEl = el('status-message'),
+            userInfoEl = el('user-info'), evaluationView = el('evaluation-view'),
+            consultationView = el('consultation-view'), btnEvaluation = el('btn-evaluation'),
+            btnConsultation = el('btn-consultation'), listContainerEl = el('avaliacoes-list'),
+            listStatusEl = el('list-status'), calcDetalhadoEl = el('calculo-detalhado');
+
+        [desempenhoEl, assiduidadeEl, tempoEl].forEach(e => e.addEventListener('change', atualizarResultado));
+
+        async function autenticar() {
+            try {
+                await signInAnonymously(auth);
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+                userInfoEl.textContent = `✅ Conectado (${firebaseConfig.projectId})`;
+                carregarAvaliacoes(); 
+            } catch (error) {
+                userInfoEl.textContent = `❌ Erro ao conectar: ${error.message}`;
+            }
+        }
+
+        function calcularNotaFinal() {
+            const d = parseFloat(desempenhoEl.value), a = parseFloat(assiduidadeEl.value), t = parseFloat(tempoEl.value);
+            return Math.round(((d * PESOS.desempenho) + (a * PESOS.assiduidade) + (t * PESOS.tempo)) * 10) / 10;
+        }
+
+        function determinarClassificacao(nota) {
+            return CLASSIFICACOES.find(c => nota >= c.min && nota <= c.max) || CLASSIFICACOES[3];
+        }
+
+        function atualizarResultado() {
+            const d = parseFloat(desempenhoEl.value), a = parseFloat(assiduidadeEl.value), t = parseFloat(tempoEl.value);
+            const nota = calcularNotaFinal(), r = determinarClassificacao(nota);
+            notaFinalEl.textContent = nota.toFixed(1);
+            classificacaoEl.className = `classification-indicator ${r.colorClass}`;
+            classificacaoEl.textContent = r.label;
+            acaoSugeridaEl.textContent = r.action;
+
+            const linhas = [
+                { criterio: 'Desempenho', valor: d, peso: 0.5, cor: 'text-indigo-600' },
+                { criterio: 'Assiduidade', valor: a, peso: 0.3, cor: 'text-green-600' },
+                { criterio: 'Tempo de Empresa', valor: t, peso: 0.2, cor: 'text-red-600' },
+            ];
+
+            calcDetalhadoEl.innerHTML = `
+                <table class="min-w-full text-sm text-gray-700">
+                    <thead class="bg-gray-100 rounded-lg">
+                        <tr>
+                            <th class="p-3 text-left font-semibold text-gray-700 rounded-tl-lg">Critério</th>
+                            <th class="p-3 text-center font-semibold text-gray-700">Valor</th>
+                            <th class="p-3 text-center font-semibold text-gray-700">Peso</th>
+                            <th class="p-3 text-center font-semibold text-gray-700 rounded-tr-lg">Contribuição</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${linhas.map(l => `
+                            <tr class="border-b border-gray-100 last:border-b-0">
+                                <td class="p-3 font-medium ${l.cor}">${l.criterio}</td>
+                                <td class="p-3 text-center">${l.valor}</td>
+                                <td class="p-3 text-center">${(l.peso * 100).toFixed(0)}%</td>
+                                <td class="p-3 text-center font-medium">${(l.valor * l.peso).toFixed(2)}</td>
+                            </tr>`).join('')}
+                        <tr class="bg-gray-50 font-bold border-t border-gray-200">
+                            <td colspan="3" class="p-3 text-right text-gray-800">Total</td>
+                            <td class="p-3 text-center text-primary">${nota.toFixed(1)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        window.salvarAvaliacao = async function() {
+            if (!db) return alert('Firebase não inicializado.');
+            const colaborador = colaboradorEl.value.trim(), avaliador = avaliadorEl.value.trim();
+            if (!colaborador || !avaliador) return alert('Preencha os nomes.');
+
+            const nota = calcularNotaFinal(), r = determinarClassificacao(nota);
+            const data = {
+                colaborador, avaliador, nota_final: nota, classificacao: r.label, acao_sugerida: r.action,
+                pontuacoes: { desempenho: desempenhoEl.value, assiduidade: assiduidadeEl.value, tempo_empresa: tempoEl.value },
+                timestamp: new Date().toISOString(), avaliador_uid: userId
+            };
+
+            salvarBtn.disabled = true; btnText.classList.add('hidden'); spinner.classList.remove('hidden');
+            try {
+                await addDoc(collection(db, 'avaliacoes'), data);
+                statusMessageEl.textContent = '✅ Avaliação salva!';
+                colaboradorEl.value = '';
+                avaliadorEl.value = '';
+            } catch (e) {
+                console.error(e); statusMessageEl.textContent = '🚨 Erro ao salvar!';
+            } finally {
+                salvarBtn.disabled = false; btnText.classList.remove('hidden'); spinner.classList.add('hidden');
+                setTimeout(() => statusMessageEl.textContent = '', 4000);
+            }
+        };
+
+        window.excluirAvaliacao = async function(id) {
+            if (!confirm('Tem certeza que deseja EXCLUIR permanentemente esta avaliação?')) return;
+
+            try {
+                const docRef = doc(db, 'avaliacoes', id);
+                await deleteDoc(docRef);
+            } catch (e) {
+                console.error('Erro ao excluir:', e);
+                alert('🚨 Erro ao excluir a avaliação. Verifique as permissões.');
+            }
+        };
+        
+        function renderItem(doc) {
+            const d = doc.data();
+            const classificationObj = CLASSIFICACOES.find(x => x.label === d.classificacao);
+            const c = classificationObj?.colorKey || 'gray'; 
+            const item = document.createElement('div');
+            
+            // Adiciona a classe de cor específica para a borda do card
+            item.className = `p-5 rounded-2xl shadow-lg history-card flex justify-between items-start ${c}`; // itens-start para alinhar ao topo
+
+            const date = new Date(d.timestamp);
+            const formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+            const formattedTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+            item.innerHTML = `
+                <div class="flex-grow">
+                    <div class="flex items-center mb-3">
+                        <div class="flex flex-col items-center justify-center p-3 w-20 h-20 rounded-full 
+                                    bg-${c}-100 border-2 border-${c}-300 mr-4 shadow-inner flex-shrink-0">
+                            <span class="text-3xl font-extrabold text-${c}-700 leading-none">${d.nota_final.toFixed(1)}</span>
+                            <span class="text-xs font-semibold text-${c}-600 uppercase">Nota</span>
+                        </div>
+                        
+                        <div class="flex flex-col">
+                            <p class="font-bold text-xl text-dark-text leading-tight">${d.colaborador}</p>
+                            <span class="text-sm font-semibold px-3 py-1 rounded-full inline-block text-white bg-${c}-500 w-fit mt-2 shadow-md">
+                                ${d.classificacao}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-100 mt-4 space-y-2 text-sm text-gray-700">
+                        <p class="flex items-center">
+                            <span class="mr-2 text-primary"> <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </span> 
+                            Avaliador: <span class="font-medium text-dark-text">${d.avaliador}</span>
+                        </p>
+                        <p class="flex items-center">
+                            <span class="mr-2 text-primary"> <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </span> 
+                            Data: ${formattedDate} às ${formattedTime}
+                        </p>
+                        <p class="text-xs mt-3 italic text-gray-500">Ação Sugerida: ${d.acao_sugerida}</p>
+                    </div>
+                </div>
+                
+                <button onclick="excluirAvaliacao('${doc.id}')" 
+                        class="ml-4 p-2.5 bg-gray-100 text-red-500 rounded-xl hover:bg-red-500 hover:text-white 
+                               transition duration-200 transform hover:scale-110 shadow-md flex-shrink-0"
+                        title="Excluir Avaliação">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            `;
+            listContainerEl.appendChild(item);
+        }
+
+        function carregarAvaliacoes() {
+            listStatusEl.textContent = 'Carregando dados...';
+            onSnapshot(collection(db, 'avaliacoes'), snap => {
+                listContainerEl.innerHTML = '';
+                if (snap.empty) {
+                    listStatusEl.textContent = 'Nenhuma avaliação encontrada.';
+                } else {
+                    listStatusEl.textContent = '';
+                    snap.forEach(renderItem);
+                }
+            }, error => {
+                listStatusEl.textContent = 'Erro ao carregar dados: ' + error.message;
+                console.error('Erro no Snapshot:', error);
+            });
+        }
+
+        window.toggleView = function(view) {
+            const isEval = view === 'evaluation';
+            evaluationView.classList.toggle('hidden', !isEval);
+            consultationView.classList.toggle('hidden', isEval);
+            
+            // Botão "Nova Avaliação"
+            btnEvaluation.classList.toggle('bg-primary', isEval);
+            btnEvaluation.classList.toggle('text-white', isEval);
+            btnEvaluation.classList.toggle('shadow-lg', isEval);
+            btnEvaluation.classList.toggle('hover:bg-indigo-700', isEval); /* Ajustado para um tom de indigo */
+            btnEvaluation.classList.toggle('bg-transparent', !isEval);
+            btnEvaluation.classList.toggle('text-gray-700', !isEval);
+            btnEvaluation.classList.toggle('hover:bg-white', !isEval);
+            btnEvaluation.classList.toggle('hover:text-primary', !isEval);
+            btnEvaluation.classList.toggle('shadow-sm', !isEval);
+
+            // Botão "Consultar Histórico"
+            btnConsultation.classList.toggle('bg-primary', !isEval);
+            btnConsultation.classList.toggle('text-white', !isEval);
+            btnConsultation.classList.toggle('shadow-lg', !isEval);
+            btnConsultation.classList.toggle('hover:bg-indigo-700', !isEval); /* Ajustado para um tom de indigo */
+            btnConsultation.classList.toggle('bg-transparent', isEval);
+            btnConsultation.classList.toggle('text-gray-700', isEval);
+            btnConsultation.classList.toggle('hover:bg-white', isEval);
+            btnConsultation.classList.toggle('hover:text-primary', isEval);
+            btnConsultation.classList.toggle('shadow-sm', isEval);
+
+            btnEvaluation.classList.toggle('hover:scale-105', isEval);
+            btnConsultation.classList.toggle('hover:scale-105', !isEval);
+        };
+
+        // Inicialização
+        autenticar();
+        atualizarResultado(); 
+    </script>
+</body>
+</html>
